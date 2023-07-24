@@ -8,15 +8,15 @@ app = FastAPI()
 router = APIRouter()
 
 
-# INIT THE DATABASE
 @router.on_event("startup")
 async def start_db():
+    """Initiate the database connection."""
     await init_db()
 
 
-# GET ALL USERS
 @router.get("/users", response_model=List[UserOut])
 async def get_all_users() -> List[UserOut]:
+    """Get all users. Returns a List with User objects or an empty list if no data is available."""
     users_cursor = UserInDB.find()
     users = await users_cursor.to_list(length=None)
     print(users)
@@ -26,9 +26,11 @@ async def get_all_users() -> List[UserOut]:
     return users_out_list
 
 
-# CREATE A USER
+
 @router.post("/users")
 async def create_user(user: UserCreate):
+    """ Create a user. Returns the user data from the database after saving said user, including the newly
+    created ID."""
     user_in_db = UserInDB(**user.dict())
     db_user = await user_in_db.insert()
     user_out_data = db_user.dict(exclude={'id'})
@@ -47,9 +49,20 @@ async def create_user(user: UserCreate):
 #     return users_out
 
 
-# GET USERS BY ID
 @router.get("/users/{doc_id}", response_model=UserOut)
 async def update_user(doc_id: str):
+    """Get user by ID."""
+    # get a user that satisfies the condition(userInDB.id == user_id)
+    user = await UserInDB.get(doc_id)
+    print(user)
+    user_out = UserOut(**user.dict())
+    # iterate through the list and create a UserOut object for each entry
+    return user_out
+
+
+@router.patch("/users/{doc_id}", response_model=UserOut)
+async def update_user(doc_id: str):
+    """Update a user entry by ID."""
     # get a user that satisfies the condition(userInDB.id == user_id)
     user = await UserInDB.get(doc_id)
     print(user)
