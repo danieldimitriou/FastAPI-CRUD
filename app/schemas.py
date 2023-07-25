@@ -3,13 +3,15 @@ from typing import Optional
 from datetime import date
 from uuid import UUID
 
+from utils import Role
+
 
 # Common Base Model
 class UserBase(BaseModel):
     email: str
     first_name: str
     last_name: str
-    is_admin: bool = False
+    role: Role = Role.user
     gender: Optional[str]
     date_of_birth: Optional[date]
 
@@ -24,7 +26,7 @@ class UserUpdate(BaseModel):
     email: Optional[str]
     first_name: Optional[str]
     last_name: Optional[str]
-    is_admin: bool = False
+    role: Optional[Role]
     gender: Optional[str]
     date_of_birth: Optional[date]
     password: Optional[str]

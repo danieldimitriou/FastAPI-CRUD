@@ -10,7 +10,7 @@ class UserInDB(Document, UserCreate):
     id: Indexed(UUID) = Field(default_factory=uuid4)
 
     class Settings:
-        name = "users3"
+        name = "users4"
         bson_encoders = {
             date: str
         }

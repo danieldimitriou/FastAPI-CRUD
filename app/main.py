@@ -2,10 +2,13 @@ from typing import List, Dict, Annotated
 from uuid import UUID
 from faker import Faker
 from fastapi import FastAPI, APIRouter, Query, Path, HTTPException
+from utils import Role
 from database import init_db
 from models import UserInDB
 from schemas import UserCreate, UserOut, UserUpdate
 from fastapi.middleware.cors import CORSMiddleware
+
+
 app = FastAPI()
 router = APIRouter()
 origins = [
@@ -98,7 +101,7 @@ async def populate_db(
         first_name = faker.first_name()
         last_name = faker.last_name()
         password = faker.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
-        is_admin = faker.pybool()
+        role = faker.random_element(elements=(Role.user, Role.admin))
         gender = faker.random_element(elements=("male", "female"))
         date_of_birth = faker.date_of_birth(minimum_age=18, maximum_age=70)
         user = UserCreate(
@@ -106,7 +109,7 @@ async def populate_db(
             first_name=first_name,
             last_name=last_name,
             password=password,
-            is_admin=is_admin,
+            role=role,
             gender=gender,
             date_of_birth=date_of_birth,
         )
