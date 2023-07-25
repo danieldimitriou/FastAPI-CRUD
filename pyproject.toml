@@ -10,6 +10,7 @@ python = "^3.11"
 fastapi = "^0.100.0"
 uvicorn = {extras = ["standard"], version = "^0.23.1"}
 beanie = "^1.20.0"
+faker = "^19.2.0"
 
 
 [build-system]
