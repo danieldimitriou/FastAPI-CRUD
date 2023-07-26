@@ -8,7 +8,6 @@ from models import UserInDB
 from schemas import UserCreate, UserOut, UserUpdate
 from fastapi.middleware.cors import CORSMiddleware
 
-
 app = FastAPI()
 router = APIRouter()
 origins = [
@@ -22,6 +21,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @router.on_event("startup")
 async def start_db():
@@ -64,6 +64,19 @@ async def delete_user(user_id: Annotated[UUID, Path(title="The ID of the user th
     else:
         raise HTTPException(status_code=500, detail="Failed to delete user")
 
+
+@router.delete("/users")
+async def delete_all_users():
+    all_users = await UserInDB.find_all().to_list()
+
+    # Delete each user one by one (optional)
+    for user in all_users:
+        await user.delete()
+
+    # Alternatively, you can delete all users in a single operation (recommended)
+    # await UserInDB.delete_many({})
+
+    return {"message": "All users have been deleted."}
 
 # # GET USERS BY EMAIL
 # @router.get("/users/{user_email}")
