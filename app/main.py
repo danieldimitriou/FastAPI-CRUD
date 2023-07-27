@@ -78,19 +78,20 @@ async def delete_all_users():
 
     return {"message": "All users have been deleted."}
 
-# # GET USERS BY EMAIL
-# @router.get("/users/{user_email}")
-# async def update_user(user_email: Annotated[str, Path(title="The email of the user to fetch.")]):
-#     # get a list of users that satisfy the condition(userindb.email == user_email)
-#     users = await UserInDB.find(UserInDB.email == user_email).to_list()
-#     # iterate through the list and create a UserOut object for each entry
-#     users_out = [UserOut(**user.__dict__) for user in users]
-#     return users_out
+
+# GET USERS BY EMAIL
+@router.get("/users/{user_email}")
+async def update_user(user_email: Annotated[str, Path(title="The email of the user to fetch.")]):
+    # get a list of users that satisfy the condition(userindb.email == user_email)
+    users = await UserInDB.find(UserInDB.email == user_email).to_list()
+    # iterate through the list and create a UserOut object for each entry
+    users_out = [UserOut(**user.__dict__) for user in users]
+    return users_out
 
 
 @router.get("/users/{doc_id}", response_model=UserOut)
 async def get_user_by_id(
-        doc_id: Annotated[str, Path(title="The ID of the document to retrieve.")]
+        doc_id: Annotated[UUID, Path(title="The ID of the document to retrieve.")]
 ):
     """Get user by ID."""
     # get a user that satisfies the condition(userInDB.id == user_id)
