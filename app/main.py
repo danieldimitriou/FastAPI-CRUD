@@ -34,7 +34,7 @@ async def get_all_users() -> List[UserOut]:
     """Get all users. Returns a List with User objects or an empty list if no data is available."""
     users_cursor = UserInDB.find()
     users = await users_cursor.to_list(length=None)
-    print(users)
+    # print(users)
     users_out_list = []
     for user in users:
         users_out_list.append(UserOut(**user.dict()))
@@ -80,10 +80,11 @@ async def delete_all_users():
 
 
 # GET USERS BY EMAIL
-@router.get("/users/{user_email}")
-async def update_user(user_email: Annotated[str, Path(title="The email of the user to fetch.")]):
+@router.get("/user", response_model=List[UserOut])
+async def get_by_email(email: Annotated[str, Query(title="The email of the user to fetch.")]):
+    print(email)
     # get a list of users that satisfy the condition(userindb.email == user_email)
-    users = await UserInDB.find(UserInDB.email == user_email).to_list()
+    users = await UserInDB.find(UserInDB.email == email).to_list()
     # iterate through the list and create a UserOut object for each entry
     users_out = [UserOut(**user.__dict__) for user in users]
     return users_out
