@@ -1,9 +1,13 @@
+from enum import Enum
+from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
-from uuid import UUID
 
-from utils import Role
+
+class Role(str, Enum):
+    admin = "admin"
+    user = "user"
 
 
 # Common Base Model

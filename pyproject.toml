@@ -12,6 +12,7 @@ uvicorn = {extras = ["standard"], version = "^0.23.1"}
 beanie = "^1.20.0"
 faker = "^19.2.0"
 pytest = "^7.4.0"
+httpx = "^0.24.1"
 
 
 [build-system]
