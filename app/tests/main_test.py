@@ -148,3 +148,14 @@ def test_generate_users_fail(parameter):
     # print(users.__len__())
     # print(users)
     assert users.__len__() == parameter
+
+
+@pytest.mark.parametrize('parameter', [-1, -2, -3, -4, -5, -6])
+@pytest.mark.xfail(reason="Negative numbers provided, assertion exception checked.")
+@pytest.mark.generate_users
+def test_generate_users_pass(parameter):
+    with pytest.raises(AssertionError):
+        users = generate_users(parameter)
+        # print(users.__len__())
+        # print(users)
+        assert users.__len__() == parameter
