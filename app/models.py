@@ -3,7 +3,10 @@ from datetime import date
 from pydantic import Field
 from uuid import UUID, uuid4
 
-from schemas import UserCreate
+# from schemas import UserCreate
+#
+#
+from app.schemas import UserCreate
 
 
 # Beanie Document (ODM) model

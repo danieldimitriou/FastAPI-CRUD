@@ -4,17 +4,29 @@ version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
+packages = [{ include = "tests" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.100.0"
-uvicorn = {extras = ["standard"], version = "^0.23.1"}
+uvicorn = { extras = ["standard"], version = "^0.23.1" }
 beanie = "^1.20.0"
 faker = "^19.2.0"
 pytest = "^7.4.0"
 httpx = "^0.24.1"
+trio = "^0.22.2"
+pytest-anyio = "^0.0.0"
+anyio = "^3.7.1"
+pytest-asyncio = "^0.21.1"
+asgi-lifespan = "^2.1.0"
+pytest-cov = "^4.1.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-s -v"
+markers = ["endpoint"]
