@@ -1,17 +1,13 @@
-import uuid
+import uvicorn
+from beanie import PydanticObjectId
 from fastapi import FastAPI, APIRouter, Query, Path, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Annotated
-from uuid import UUID
-# from database import init_db
-# from models import UserInDB
-# from schemas import UserCreate, UserOut, UserUpdate, Role
-# from utils import generate_users
-
-from app.database import init_db
-from app.models import UserInDB
-from app.schemas import UserCreate, UserOut, UserUpdate, Role
-from app.utils import generate_users
+from api.database import init_db
+from api.models import UserInDB
+from api.schemas import UserCreate, UserOut, UserUpdate, Role
+from api.utils import generate_users
+from pymongo.errors import DuplicateKeyError
 
 app = FastAPI()
 router = APIRouter()
@@ -34,8 +30,8 @@ async def start_db():
     await init_db()
 
 
-@router.get("/users", response_model=List[UserOut], status_code=200)
-async def get_all_users() -> List[UserOut]:
+@router.get("/users", response_model=list[UserInDB], status_code=200)
+async def get_all_users() -> list[UserInDB]:
     """Get all users. Returns a List with User objects or an empty list if no data is available."""
     try:
         users_cursor = UserInDB.find()
@@ -43,33 +39,33 @@ async def get_all_users() -> List[UserOut]:
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while fetching users from the database. Please try again.{e}"
+            detail=f"An error occurred while fetching users from the database. Please try again. Error message: {e}"
         )
 
-    users_out_list = []
-    for user in users:
-        # print(user.id)
-        users_out_list.append(UserOut(**user.dict()))
-    return users_out_list
+    return users
 
 
-@router.post("/users", response_model=UserOut, status_code=201)
-async def create_user(user: UserCreate) -> UserOut:
+@router.post("/users", response_model=UserInDB, status_code=201)
+async def create_user(user: UserCreate) -> UserInDB:
     """ Create a user. Returns the user data from the database after saving said user, including the newly
     created ID."""
-    
     try:
         user_in_db = UserInDB(**user.dict())
         db_user = await user_in_db.insert()
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=409,
+            detail="There is already a user with this email. "
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail="An error occurred while persisting the user to the database. Please try again."
         )
-    user_out_data = db_user.dict(exclude={'id'})
-    user_out = UserOut(id=str(db_user.id), **user_out_data)
-    if user_out:
-        return user_out
+
+    # user_out_data = db_user.dict(exclude={'id'})
+    if db_user:
+        return db_user
     else:
         raise HTTPException(
             status_code=500, detail="Could not create user. Please try again."
@@ -77,14 +73,14 @@ async def create_user(user: UserCreate) -> UserOut:
 
 
 @router.delete("/users/{doc_id}", status_code=200)
-async def delete_user(doc_id: Annotated[UUID, Path(title="The ID of the user that will be deleted.")]):
+async def delete_user(doc_id: Annotated[PydanticObjectId, Path(title="The ID of the user that will be deleted.")]):
     user = await UserInDB.get(doc_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found.")
 
-    deleted = await user.delete()
-    if not deleted:
-        raise HTTPException(status_code=500, detail="Failed to delete user")
+    deleted_user = await user.delete()
+    if not deleted_user:
+        raise HTTPException(status_code=500, detail="Failed to delete user. Please try again.")
 
     return {"message": "User deleted successfully"}
 
@@ -108,8 +104,8 @@ async def delete_all_users():
 
 
 # GET USERS BY EMAIL
-@router.get("/user", response_model=UserOut, status_code=200)
-async def get_by_email(email: Annotated[str, Query(title="The email of the user to fetch.")]) -> UserOut:
+@router.get("/user", response_model=UserInDB, status_code=200)
+async def get_by_email(email: Annotated[str, Query(title="The email of the user to fetch.")]) -> UserInDB:
     # get a list of users that satisfy the condition(userindb.email == user_email)
     try:
         user = await UserInDB.find_one(UserInDB.email == email)
@@ -119,33 +115,31 @@ async def get_by_email(email: Annotated[str, Query(title="The email of the user 
     if not user:
         raise HTTPException(status_code=404, detail=f"user with email: {email} not found.")
     # iterate through the list and create a UserOut object for each entry
-    user_out = UserOut(**user.__dict__)
-    return user_out
+
+    return user
 
 
-@router.get("/users/{doc_id}", response_model=UserOut, status_code=200)
+@router.get("/users/{doc_id}", response_model=UserInDB, status_code=200)
 async def get_user_by_id(
-        doc_id: Annotated[UUID, Path(title="The ID of the document to retrieve.")]
-) -> UserOut:
+        doc_id: Annotated[PydanticObjectId, Path(title="The ID of the document to retrieve.")]
+) -> UserInDB:
     """Get user by ID."""
     # get a user that satisfies the condition(userInDB.id == user_id)
     print(type(doc_id))
-    print(isinstance(doc_id, uuid.UUID))
-    if not isinstance(doc_id, uuid.UUID):
-        raise HTTPException(status_code=404, detail="Please provide a correct UUID for the user.")
+    if not isinstance(doc_id, PydanticObjectId):
+        raise HTTPException(status_code=404, detail="Please provide a correct ID for the user.")
     try:
         user = await UserInDB.get(doc_id)
-        user_out = UserOut(**user.dict())
+        return user
     except Exception as e:
         raise HTTPException(status_code=500,
                             detail="An error occurred while fetching the data from the database. Please try again.")
-    return user_out
 
 
-@router.get("/populate", response_model=List[UserOut], status_code=201)
+@router.get("/populate", response_model=List[UserInDB], status_code=201)
 async def populate_db(
         count: Annotated[int, Query(title="Count represents the number of entries the DB will be populated with.")]
-) -> List[UserOut]:
+) -> List[UserInDB]:
     """Populate the database with dummy data. Through Query parameters the user can decide the amount
     of users to populate the db with."""
     users_create = generate_users(count)
@@ -153,13 +147,12 @@ async def populate_db(
     for user in users_create:
         db_user = await UserInDB(**user.dict()).insert()
         user_out_data = db_user.dict(exclude={'id'})
-        user_out = UserOut(id=str(db_user.id), **user_out_data)
-        users_out.append(user_out)
+        users_out.append(db_user)
     return users_out
 
 
-@router.patch("/users/{doc_id}", response_model=UserOut, status_code=200)
-async def update_user(doc_id: UUID, user_update: UserUpdate) -> UserOut:
+@router.patch("/users/{doc_id}", response_model=UserInDB, status_code=200)
+async def update_user(doc_id: PydanticObjectId, user_update: UserUpdate) -> UserInDB:
     print(user_update)
     """Update a user entry by ID."""
     user = await UserInDB.get(doc_id)
@@ -172,7 +165,11 @@ async def update_user(doc_id: UUID, user_update: UserUpdate) -> UserOut:
         setattr(user, field, value)
 
     await user.save()
-    return UserOut(id=str(user.id), **user.dict(exclude={'id'}))
+    return user
 
 
 app.include_router(router)
+
+if __name__ == "__main__":
+    """Launched with `poetry run start` at root level"""
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

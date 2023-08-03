@@ -1,5 +1,7 @@
 from enum import Enum
 from uuid import UUID
+
+from beanie import PydanticObjectId
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
@@ -23,7 +25,6 @@ class UserBase(BaseModel):
 # Pydantic model for POST data
 class UserCreate(UserBase):
     password: str
-    pass
 
 
 class UserUpdate(BaseModel):
@@ -38,5 +39,5 @@ class UserUpdate(BaseModel):
 
 # Pydantic model for the response
 class UserOut(UserCreate):
-    id: UUID
+    # id: PydanticObjectId
     pass
