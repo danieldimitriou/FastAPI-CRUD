@@ -2,8 +2,6 @@ import asyncio
 import json
 from typing import List
 import pytest
-from api.schemas import UserOut
-from api.utils import generate_users
 
 # from beanie.exceptions import
 pytestmark = [pytest.mark.endpoint]

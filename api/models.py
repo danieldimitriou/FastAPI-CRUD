@@ -1,20 +1,16 @@
-from beanie import Document, Indexed, PydanticObjectId
+from typing import Annotated
+from beanie import Document, Indexed
 from datetime import date
-
-from mongoengine import UUIDField
-from pydantic import Field
-from uuid import UUID, uuid4
-
+from pydantic import Field, constr
 from api.schemas import UserCreate
-
-
-# from api.schemas import UserCreate
 
 
 # Beanie Document (ODM) model
 class UserInDB(Document, UserCreate):
     # id: Indexed(PydanticObjectId)
-    email: Indexed(str, unique=True) = Field()
+    email: Indexed(Annotated[
+                       constr(regex="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$", strip_whitespace=True), Field(
+                           example="email@provider.com", description="The email of the user.")], unique=True) = Field()
 
     class Settings:
         # Set the collection name

@@ -1,9 +1,6 @@
 from typing import List
 from faker import Faker
-# from schemas import UserOut, UserCreate, Role
-
-
-from api.schemas import UserOut, UserCreate, Role
+from api.schemas import UserCreate, Role
 
 
 def generate_users(count: int) -> List[UserCreate]:

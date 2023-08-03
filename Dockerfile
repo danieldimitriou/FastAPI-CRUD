@@ -10,12 +10,13 @@ COPY pyproject.toml poetry.lock ./
 # Copy the remaining source code
 COPY api ./api
 COPY tests ./tests
+# Install the dependencies defined in pyproject.toml
+RUN poetry install
 
 # Expose the required port
 EXPOSE 8000
 
-# Install the dependencies defined in pyproject.toml
-RUN poetry install
+
 
 # Set the entrypoint command to run the FastAPI application using uvicorn
 ENTRYPOINT ["poetry", "run", "python", "api/main.py"]
