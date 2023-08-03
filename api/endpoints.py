@@ -17,7 +17,7 @@ async def start_db():
     await init_db()
 
 
-@router.get("/users", response_model=list[UserInDB], status_code=200)
+@router.get("/users", response_model=list[UserInDB], status_code=200, tags=["users"])
 async def get_all_users() -> list[UserInDB]:
     """Get all users. Returns a List with User objects or an empty list if no data is available."""
     try:
@@ -32,7 +32,7 @@ async def get_all_users() -> list[UserInDB]:
     return users
 
 
-@router.post("/users", response_model=UserInDB, status_code=201)
+@router.post("/users", response_model=UserInDB, status_code=201, tags=["users"])
 async def create_user(user: UserCreate) -> UserInDB:
     """ Create a user. Returns the user data from the database after saving said user, including the newly
     created ID."""
@@ -59,7 +59,7 @@ async def create_user(user: UserCreate) -> UserInDB:
         )
 
 
-@router.delete("/users/{doc_id}", status_code=200)
+@router.delete("/users/{doc_id}", status_code=200, tags=["users"])
 async def delete_user(doc_id: Annotated[PydanticObjectId, Path(title="The ID of the user that will be deleted.")]):
     user = await UserInDB.get(doc_id)
     if not user:
@@ -72,7 +72,7 @@ async def delete_user(doc_id: Annotated[PydanticObjectId, Path(title="The ID of 
     return {"message": "User deleted successfully"}
 
 
-@router.delete("/users", status_code=200)
+@router.delete("/users", status_code=200, tags=["users"])
 async def delete_all_users():
     all_users = await UserInDB.find_all().to_list()
     # Delete each user one by one (optional)
@@ -91,7 +91,7 @@ async def delete_all_users():
 
 
 # GET USERS BY EMAIL
-@router.get("/user", response_model=UserInDB, status_code=200)
+@router.get("/user", response_model=UserInDB, status_code=200, tags=["users"])
 async def get_by_email(email: Annotated[str, Query(title="The email of the user to fetch.")]) -> UserInDB:
     # get a list of users that satisfy the condition(userindb.email == user_email)
     try:
@@ -106,7 +106,7 @@ async def get_by_email(email: Annotated[str, Query(title="The email of the user 
     return user
 
 
-@router.get("/users/{doc_id}", response_model=UserInDB, status_code=200)
+@router.get("/users/{doc_id}", response_model=UserInDB, status_code=200, tags=["users"])
 async def get_user_by_id(
         doc_id: Annotated[PydanticObjectId, Path(title="The ID of the document to retrieve.")]
 ) -> UserInDB:
@@ -123,7 +123,7 @@ async def get_user_by_id(
                             detail="An error occurred while fetching the data from the database. Please try again.")
 
 
-@router.get("/populate", response_model=List[UserInDB], status_code=201)
+@router.get("/populate", response_model=List[UserInDB], status_code=201, tags=["populate"])
 async def populate_db(
         count: Annotated[int, Query(title="Count represents the number of entries the DB will be populated with.")]
 ) -> List[UserInDB]:
@@ -138,7 +138,7 @@ async def populate_db(
     return users_out
 
 
-@router.patch("/users/{doc_id}", response_model=UserInDB, status_code=200)
+@router.patch("/users/{doc_id}", response_model=UserInDB, status_code=200, tags=["users"])
 async def update_user(doc_id: PydanticObjectId, user_update: UserUpdate) -> UserInDB:
     print(user_update)
     """Update a user entry by ID."""
