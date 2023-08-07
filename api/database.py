@@ -5,6 +5,6 @@ from api.models import UserInDB
 
 async def init_db():
     client = motor.motor_asyncio.AsyncIOMotorClient(
-        "mongodb://mongodb:27017/users"
+        "mongodb://localhost:27017/users"
     )
     await init_beanie(database=client["user_db"], document_models=[UserInDB])

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastcrudapi"
-version = "0.1.0"
+version = "0.2.0"
 description = "FastAPI CRUD API that generates dummy user data."
 authors = ["Daniel Dimitriou <danieldimitriou1@gmail.com>"]
 #readme = "README.md"

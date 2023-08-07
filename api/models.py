@@ -9,7 +9,7 @@ from api.schemas import UserCreate
 class UserInDB(Document, UserCreate):
     class Settings:
         # Set the collection name
-        name = "users12121"
+        name = "users"
         # Set an encoder for the date
         bson_encoders = {
             date: str

@@ -1,5 +1,4 @@
 from typing import Annotated, List
-
 from beanie import PydanticObjectId
 from fastapi import HTTPException, Path, Query, APIRouter
 from pymongo.errors import DuplicateKeyError
@@ -17,7 +16,16 @@ async def start_db():
     await init_db()
 
 
-@router.get("/users", response_model=list[UserInDB], status_code=200, tags=["users"])
+@router.get("/users", response_model=list[UserInDB], status_code=200, operation_id="get_all_users", responses={
+    500: {"description": "Internal Server Error",
+          "content": {
+              "application/json": {
+                  "example": {
+                      "detail": "An internal error occurred while fetching the data from the database. Please try again."}
+              }
+          },
+          }
+})
 async def get_all_users() -> list[UserInDB]:
     """Get all users. Returns a List with User objects or an empty list if no data is available."""
     try:
@@ -26,13 +34,89 @@ async def get_all_users() -> list[UserInDB]:
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while fetching users from the database. Please try again. Error message: {e}"
+            detail="An internal error occurred while fetching the data from the database. Please try again."
         )
 
     return users
 
 
-@router.post("/users", response_model=UserInDB, status_code=201, tags=["users"])
+@router.get("/users/{doc_id}", response_model=UserInDB, status_code=200, operation_id="get_user_by_id", responses={
+    404: {"description": "User not found.", "content": {
+        "application/json": {
+            "example": {
+                "detail": "The ID provided does not match any users in the database."}
+        }
+    }},
+    500: {"description": "Internal Server Error.", "content": {
+        "application/json": {
+            "example": {
+                "detail": "An internal error occurred while fetching the data from the database. Please try again."}
+        }
+    }}
+})
+async def get_user_by_id(
+        doc_id: Annotated[
+            PydanticObjectId, Path(alias="Document ID", description="The document ID of the user to fetch.")]
+) -> UserInDB:
+    """Get user by ID.
+    Fetches a user from the database given the correct document ID.
+    Returns 404 if there is no match and 500 for any other issues. """
+    print(type(doc_id))
+    if not isinstance(doc_id, PydanticObjectId):
+        raise HTTPException(status_code=404, detail="The ID provided does not match any users in the database.")
+    try:
+        user = await UserInDB.get(doc_id)
+        return user
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail="An internal error occurred while fetching the data from the database. Please try "
+                                   "again.")
+
+
+# GET USERS BY EMAIL
+@router.get("/user", response_model=UserInDB, status_code=200, operation_id="get_by_email", responses={
+    404: {"description": "User not found", "content": {
+        "application/json": {
+            "example": {
+                "detail": "The ID provided does not match any users in the database."}
+        }
+    }},
+    500: {"description": "Internal Server Error", "content": {
+        "application/json": {
+            "example": {
+                "detail": "An internal error occurred while fetching the data from the database. Please try again."}
+        }
+    }}
+}
+            )
+async def get_by_email(email: Annotated[str, Query(title="The email of the user to fetch.")]) -> UserInDB:
+    """Get a user by their email."""
+    try:
+        user = await UserInDB.find_one(UserInDB.email == email)
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail="An error occurred while fetching the data from the database. Please try again.")
+
+    if not user:
+        raise HTTPException(status_code=404, detail=f"user with email: {email} not found.")
+
+    return user
+
+
+@router.post("/users", response_model=UserInDB, status_code=201, operation_id="create_user", responses={
+    500: {"description": "Internal Server Error", "content": {
+        "application/json": {
+            "example": {
+                "detail": "An internal error occurred while fetching the data from the database. Please try again."}
+        }}},
+    409: {"description": "Conflict", "content": {
+        "application/json": {
+            "example": {
+                "detail": "There is already a user with this email."}
+        }
+    }}
+}
+             )
 async def create_user(user: UserCreate) -> UserInDB:
     """ Create a user. Returns the user data from the database after saving said user, including the newly
     created ID."""
@@ -59,8 +143,29 @@ async def create_user(user: UserCreate) -> UserInDB:
         )
 
 
-@router.delete("/users/{doc_id}", status_code=200, tags=["users"])
-async def delete_user(doc_id: Annotated[PydanticObjectId, Path(title="The ID of the user that will be deleted.")]):
+@router.delete("/users/{doc_id}", status_code=200, operation_id="delete", responses={
+    200: {"description": "Successful Response", "content": {
+        "application/json": {
+            "example": {
+                "message": "User deleted successfully"}
+        }
+    }},
+    404: {"description": "User not found", "content": {
+        "application/json": {
+            "example": {
+                "detail": "The ID provided does not match any users in the database."}
+        }
+    }},
+    500: {"description": "Internal Server Error", "content": {
+        "application/json": {
+            "example": {
+                "detail": "An internal error occurred while fetching the data from the database. Please try again."}
+        }
+    }}
+}
+               )
+async def delete_user(doc_id: Annotated[
+    PydanticObjectId, Path(alias="Document ID", description="The document ID of the user that will be deleted.")]):
     user = await UserInDB.get(doc_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -72,58 +177,60 @@ async def delete_user(doc_id: Annotated[PydanticObjectId, Path(title="The ID of 
     return {"message": "User deleted successfully"}
 
 
-@router.delete("/users", status_code=200, tags=["users"])
+@router.delete("/users", status_code=200, operation_id="",
+               description="Delete all users from the database.", responses={
+        200: {"description": "Successful Response", "content": {
+            "application/json": {
+                "example": {
+                    "message": "All users have been deleted successfully"}
+            }
+        }},
+        404: {"description": "User not found", "content": {
+            "application/json": {
+                "example": {
+                    "detail": "No users were found. The database is empty."}
+            }
+        }},
+        500: {"description": "User not found", "content": {
+            "application/json": {
+                "example": {
+                    "detail": "An internal error occurred while fetching the data from the database. Please try again."}
+            }
+        }}
+    })
 async def delete_all_users():
     all_users = await UserInDB.find_all().to_list()
     # Delete each user one by one (optional)
     if all_users:
-        for user in all_users:
-            await user.delete()
+        try:
+            for user in all_users:
+                await user.delete()
 
-        # Alternatively, you can delete all users in a single operation (recommended)
-        # await UserInDB.delete_many({})
-
-        return {"message": "All users have been deleted."}
-    raise HTTPException(
-        status_code=404,
-        detail="No users were found."
-    )
-
-
-# GET USERS BY EMAIL
-@router.get("/user", response_model=UserInDB, status_code=200, tags=["users"])
-async def get_by_email(email: Annotated[str, Query(title="The email of the user to fetch.")]) -> UserInDB:
-    # get a list of users that satisfy the condition(userindb.email == user_email)
-    try:
-        user = await UserInDB.find_one(UserInDB.email == email)
-    except Exception as e:
-        raise HTTPException(status_code=500,
-                            detail="An error occurred while fetching the data from the database. Please try again.")
-    if not user:
-        raise HTTPException(status_code=404, detail=f"user with email: {email} not found.")
-    # iterate through the list and create a UserOut object for each entry
-
-    return user
+            return {"message": "All users have been deleted successfully"}
+        except Exception as e:
+            print(e)
+            raise HTTPException(
+                status_code=500,
+                detail="An internal error occurred while fetching the data from the database. Please try again."
+            )
+    else:
+        raise HTTPException(status_code=404, detail="No users were found. The database is empty.")
 
 
-@router.get("/users/{doc_id}", response_model=UserInDB, status_code=200, tags=["users"])
-async def get_user_by_id(
-        doc_id: Annotated[PydanticObjectId, Path(title="The ID of the document to retrieve.")]
-) -> UserInDB:
-    """Get user by ID."""
-    # get a user that satisfies the condition(userInDB.id == user_id)
-    print(type(doc_id))
-    if not isinstance(doc_id, PydanticObjectId):
-        raise HTTPException(status_code=404, detail="Please provide a correct ID for the user.")
-    try:
-        user = await UserInDB.get(doc_id)
-        return user
-    except Exception as e:
-        raise HTTPException(status_code=500,
-                            detail="An error occurred while fetching the data from the database. Please try again.")
-
-
-@router.get("/populate", response_model=List[UserInDB], status_code=201, tags=["populate"])
+@router.get("/populate", response_model=List[UserInDB], status_code=201,
+            description="Create users in the database with dummy data.", responses={
+        200: {"description": "Successful Response", "content": {
+            "application/json": {
+                "example": {
+                    "message": "All users have been deleted successfully"}
+            }
+        }},
+        500: {"description": "User not found", "content": {
+            "application/json": {
+                "example": {
+                    "detail": "An internal error occurred while fetching the data from the database. Please try again."}
+            }
+        }}})
 async def populate_db(
         count: Annotated[int, Query(title="Count represents the number of entries the DB will be populated with.")]
 ) -> List[UserInDB]:
@@ -131,14 +238,19 @@ async def populate_db(
     of users to populate the db with."""
     users_create = generate_users(count)
     users_out = []
-    for user in users_create:
-        db_user = await UserInDB(**user.dict()).insert()
-        user_out_data = db_user.dict(exclude={'id'})
-        users_out.append(db_user)
-    return users_out
+    try:
+        for user in users_create:
+            db_user = await UserInDB(**user.dict()).insert()
+            user_out_data = db_user.dict(exclude={'id'})
+            users_out.append(db_user)
+        return users_out
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500,
+                            detail="An internal error occurred while fetching the data from the database. Please try again.")
 
 
-@router.patch("/users/{doc_id}", response_model=UserInDB, status_code=200, tags=["users"])
+@router.patch("/users/{doc_id}", response_model=UserInDB, status_code=200, tags=["Users"])
 async def update_user(doc_id: PydanticObjectId, user_update: UserUpdate) -> UserInDB:
     print(user_update)
     """Update a user entry by ID."""

@@ -6,12 +6,8 @@ from api.endpoints import router
 
 tags_metadata = [
     {
-        "name": "users",
+        "name": "Users",
         "description": "All CRUD endpoints for the User entity."
-    },
-    {
-        "name": "populate",
-        "description": "A separate endpoint to populate the database with dummy user data."
     }
 ]
 
@@ -41,7 +37,7 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
-app.include_router(router)
+app.include_router(router, tags=['Users'])
 origins = [
     "*",
 ]
